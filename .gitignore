@@ -1,0 +1,8 @@
+.cursor
+.vscode
+.idea
+.DS_Store
+.venv
+.env
+.env.local
+.history
