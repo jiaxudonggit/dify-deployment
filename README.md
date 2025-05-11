@@ -51,7 +51,7 @@ Docker 和 Docker Compose 的安装请参考[官方文档](https://docs.docker.c
 1. 克隆本仓库：
 
 ```bash
-git clone https://github.com/your-username/dify-deployment.git
+git clone https://github.com/jiaxudonggit/dify-deployment.git
 cd dify-deployment
 ```
 
@@ -80,7 +80,7 @@ docker-compose up -d
 
 5. 访问服务：
 
-浏览器访问 `http://localhost` 即可看到 Dify 的登录页面。默认管理员账号为 `admin@admin.com`，密码为您在 `.env` 文件中设置的 `INIT_PASSWORD`。
+浏览器访问 `http://localhost` 即可看到 Dify 的登录页面。可以通过浏览器访问 `http://localhost/install` 来访问 Dify 仪表板并开始初始化过程。
 
 ## 详细配置
 
@@ -374,7 +374,6 @@ nginx:
 在 `.env` 文件中修改相应的端口配置，例如：
 
 ```
-NGINX_PORT=8080
 WEB_PORT=3001
 API_PORT=5002
 ```
@@ -425,7 +424,7 @@ docker-compose up -d
 修改 `conf/nginx/conf.d/default.conf` 文件，将 `server_name localhost;` 改为 `server_name yourdomain.com;`，然后重启Nginx：
 
 ```bash
-docker-compose restart nginx
+docker-compose restart dify-nginx
 ```
 
 ## 升级指南
