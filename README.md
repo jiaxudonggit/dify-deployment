@@ -23,6 +23,7 @@
   - [SSRF代理](#ssrf代理)
   - [非结构化数据处理服务](#非结构化数据处理服务)
   - [Nginx服务](#nginx服务)
+  - [Redis服务](#redis服务)
 - [目录结构](#目录结构)
 - [常见问题](#常见问题)
 - [升级指南](#升级指南)
@@ -68,7 +69,7 @@ vim .env
 3. 创建必要的目录：
 
 ```bash
-mkdir -p storage/logs nginx/logs
+mkdir -p storage/logs nginx/logs pgvector/data redis/data
 ```
 
 4. 启动服务：
@@ -127,6 +128,7 @@ Dify 使用 Redis 作为缓存和消息队列：
 | REDIS_PASSWORD | Redis密码 | difyai123456 | `your-redis-password` |
 | REDIS_DB | Redis数据库索引 | 0 | `1` |
 | CELERY_BROKER_URL | Celery消息队列URL | redis://:difyai123456@redis:6379/1 | `redis://:password@redis:6379/2` |
+| REDIS_PORT_EXPOSED | Redis暴露端口 | 6379 | `6379` |
 
 ### 存储配置
 
@@ -146,21 +148,27 @@ Dify 支持多种存储方式，包括本地存储、S3、Azure Blob等：
 
 ### 向量数据库配置
 
-Dify 支持多种向量数据库，如Weaviate、Qdrant、Milvus等：
+本项目默认使用 pgvector 作为向量数据库，配置如下：
 
 | 变量名 | 说明 | 默认值 | 示例 |
 |------|------|------|------|
-| VECTOR_STORE | 向量数据库类型 | weaviate | `qdrant` |
-| WEAVIATE_ENDPOINT | Weaviate端点 | <http://weaviate:8080> | `http://weaviate:8080` |
-| WEAVIATE_API_KEY | Weaviate API密钥 | WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih | `your-api-key` |
-| QDRANT_URL | Qdrant URL | <http://qdrant:6333> | `http://qdrant:6333` |
-| QDRANT_API_KEY | Qdrant API密钥 | difyai123456 | `your-api-key` |
-| MILVUS_URI | Milvus URI | <http://0.0.0.0:19530> | `http://milvus:19530` |
+| VECTOR_STORE | 向量数据库类型 | pgvector | `pgvector` |
 | PGVECTOR_HOST | PGVector主机 | pgvector | `pgvector` |
 | PGVECTOR_PORT | PGVector端口 | 5432 | `5432` |
 | PGVECTOR_USER | PGVector用户名 | postgres | `postgres` |
 | PGVECTOR_PASSWORD | PGVector密码 | difyai123456 | `your-password` |
 | PGVECTOR_DATABASE | PGVector数据库名 | dify | `dify_vector` |
+| PGVECTOR_PORT_EXPOSED | PGVector暴露的端口 | 5432 | `5432` |
+| PGVECTOR_PG_BIGM | 启用pg_bigm模块 | false | `true` |
+
+pgvector是一个强大的开源向量数据库扩展，它为PostgreSQL添加了向量相似度搜索功能，非常适合AI应用的向量检索需求。相比其他向量数据库，pgvector具有以下优势：
+
+1. 与PostgreSQL无缝集成，可以利用PostgreSQL成熟的事务、备份和扩展生态
+2. 支持多种距离计算方法：欧几里得距离、余弦相似度和内积
+3. 支持HNSW索引，查询性能优异
+4. 开源免费，部署简单
+
+Dify也支持其他向量数据库，如Weaviate、Qdrant、Milvus等，可通过修改`VECTOR_STORE`环境变量来切换，但是需要自行部署向量数据库。
 
 ### 插件系统配置
 
@@ -343,6 +351,31 @@ nginx:
     - plugin_daemon
 ```
 
+### Redis服务
+
+Redis服务用于缓存和消息队列处理：
+
+```yaml
+redis:
+  container_name: ${CONTAINER_NAME}-redis
+  image: redis:7-alpine
+  restart: always
+  command: >
+    --requirepass ${REDIS_PASSWORD:-difyai123456}
+    --appendonly yes
+    --maxmemory 512mb
+    --maxmemory-policy volatile-lru
+  volumes:
+    - ${DIFY_ROOT_PATH}/redis/data:/data
+```
+
+Redis是一个开源的内存数据结构存储，被Dify用作：
+
+1. 缓存系统，提高应用响应速度
+2. Celery任务队列的消息代理
+3. 会话数据存储
+4. 临时状态管理
+
 ## 目录结构
 
 ```
@@ -363,7 +396,11 @@ nginx:
 ├── storage/                  # 数据存储目录
 │   ├── logs/                 # 日志目录
 │   ├── files/                # 上传文件目录
-│   └── plugin_daemon/        # 插件数据目录
+│   ├── plugin_daemon/        # 插件数据目录
+│   ├── redis/                # Redis数据目录
+│   │   └── data/             # Redis持久化数据
+│   └── pgvector/             # PGVector数据目录
+│   │   └── data/             # PGVector持久化数据
 └── README.md                 # 说明文档
 ```
 
@@ -426,6 +463,35 @@ docker-compose up -d
 ```bash
 docker-compose restart dify-nginx
 ```
+
+### 6. Redis连接失败怎么办？
+
+如果Redis连接失败，可能的原因和解决方案：
+
+1. 检查Redis容器是否正常运行：
+
+```bash
+docker-compose ps dify-redis
+```
+
+2. 查看Redis日志：
+
+```bash
+docker-compose logs dify-redis
+```
+
+3. 检查Redis密码配置是否一致：
+确保`.env`文件中的`REDIS_PASSWORD`与API服务环境变量中的一致。
+
+4. 直接连接Redis进行测试：
+
+```bash
+docker exec -it dify-redis redis-cli
+auth your-redis-password
+ping
+```
+
+如果返回`PONG`，则Redis服务正常。
 
 ## 升级指南
 
