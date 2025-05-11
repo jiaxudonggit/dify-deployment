@@ -423,8 +423,34 @@ services:
     networks:
       - dify-network
 
+  # nginx服务
+  # 用于反向代理所有Dify服务
+  nginx:
+    container_name: ${CONTAINER_NAME}-nginx
+    image: nginx:latest
+    restart: always
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    volumes:
+      - ./conf/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./conf/nginx/conf.d:/etc/nginx/conf.d
+      - ./conf/nginx/ssl:/etc/nginx/ssl
+      - ${DIFY_ROOT_PATH}/nginx/logs:/var/log/nginx
+    environment:
+      - NGINX_PORT=80
+      - NGINX_SSL_PORT=443
+      - NGINX_SERVER_NAME=localhost
+      - ACME_CHALLENGE_LOCATION=""
+      - HTTPS_CONFIG=""
+    depends_on:
+      - api
+      - web
+      - plugin_daemon
+    networks:
+      - dify-network
+
 networks:
-  # 创建一个网络，用于sandbox、api和ssrf_proxy之间的通信，不能访问外部
   ssrf_proxy_network:
     driver: bridge
   dify-network:
