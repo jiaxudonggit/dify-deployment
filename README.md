@@ -34,7 +34,7 @@
 
 本项目提供了一套完整的 Docker Compose 配置，用于快速部署 Dify 平台。Dify 是一个强大的 LLM 应用开发平台，支持构建各种基于大语言模型的应用，如聊天机器人、知识库问答等。
 
-本项目中的 `docker-compose.yml` 和 `conf` 目录下的配置文件都是从 [GitHub Dify项目](https://github.com/langgenius/dify) 中复制出来的，经过了精心的整理和补充，方便用户快速部署。
+本项目中的 `docker-compose.yml` 和 `conf` 目录下的配置文件都是从 [GitHub Dify项目](https://github.com/langgenius/dify) 中复制出来的，经过了适当的删减和补充，方便快速部署。
 
 ## 环境要求
 
